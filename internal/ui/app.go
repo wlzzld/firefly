@@ -24,6 +24,7 @@ func Run(a *app.App) error {
 	w.SetContent(c.buildRoot())
 	w.Resize(fyne.NewSize(1020, 680))
 	w.CenterOnScreen()
+	w.Show() // Fyne 不会自动显示窗口；漏掉则事件循环空转、界面无影
 
 	ctx, cancel := context.WithCancel(context.Background())
 	g, _ := a.StartBackground(ctx)
