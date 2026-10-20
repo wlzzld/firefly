@@ -27,12 +27,19 @@ jobs:
       - name: 打包 Linux amd64
         run: fyne-cross linux -arch amd64 -name Firefly ./cmd/firefly
 
+      # 资产统一命名 {项目名}-{系统名}-{架构}，与 macOS 的
+      # Firefly-macos-arm64.zip 对齐（fyne-cross 默认只叫 Firefly.*）
+      - name: 统一资产命名
+        run: |
+          mv fyne-cross/dist/windows-amd64/Firefly.zip fyne-cross/dist/windows-amd64/Firefly-windows-amd64.zip
+          mv fyne-cross/dist/linux-amd64/Firefly.tar.xz fyne-cross/dist/linux-amd64/Firefly-linux-amd64.tar.xz
+
       - name: 附加到 Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            fyne-cross/dist/windows-amd64/*.zip
-            fyne-cross/dist/linux-amd64/*.tar.xz
+            fyne-cross/dist/windows-amd64/Firefly-windows-amd64.zip
+            fyne-cross/dist/linux-amd64/Firefly-linux-amd64.tar.xz
 
   darwin:
     name: macOS（原生打包 + 权限键注入）

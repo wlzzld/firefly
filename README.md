@@ -63,6 +63,9 @@ Info.plist 权限键。
 
 #### macOS — `Firefly.app`
 
+Release 资产为 `Firefly-macos-arm64.zip`（ditto 压缩的 Firefly.app），
+解压后按下列方式安装；本机构建则直接产出 `Firefly.app/`：
+
 ```bash
 make package-darwin                 # 仓库根产出 Firefly.app/
 cp -R Firefly.app /Applications/    # 或 Finder 拖入「应用程序」
@@ -78,20 +81,20 @@ cp -R Firefly.app /Applications/    # 或 Finder 拖入「应用程序」
 
 #### Windows — `firefly.exe`（绿色便携）
 
-产物 `fyne-cross/dist/windows-amd64/Firefly.zip` 解压后仅一个
-`firefly.exe`，**无安装过程**：
+Release 资产 `Firefly-windows-amd64.zip`（本地 `make cross-windows` 产物
+同构）解压后仅一个 `firefly.exe`，**无安装过程**：
 
 1. 解压到固定目录，如 `C:\Program Files\Firefly\`；
 2. 双击 `firefly.exe` 运行；可右键「发送到 → 桌面快捷方式」；
 3. 首次启动防火墙弹窗勾选**专用网络**允许（误拒后的手动放行见排障）。
 
-#### Ubuntu — `Firefly.tar.xz`
+#### Ubuntu — `Firefly-linux-amd64.tar.xz`
 
-产物 `fyne-cross/dist/linux-amd64/Firefly.tar.xz` 内含二进制、`.desktop`
-菜单项、图标与安装用 Makefile：
+Release 资产 `Firefly-linux-amd64.tar.xz`（本地 `make cross-linux` 产物
+同构）内含二进制、`.desktop` 菜单项、图标与安装用 Makefile：
 
 ```bash
-tar -xf Firefly.tar.xz
+tar -xf Firefly-linux-amd64.tar.xz
 sudo make install      # 系统安装：/usr/local/bin + 桌面项 + 图标
 # 或免 sudo 的当前用户安装：make user-install（装到 ~/.local/bin，需在 PATH 中）
 ```
