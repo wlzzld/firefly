@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,12 @@ func TestLoadOrCreateStable(t *testing.T) {
 }
 
 func TestLoadOrCreateFilePermissions(t *testing.T) {
+	// Windows/NTFS 无 Unix 权限位：os.Chmod 只映射只读属性，Go 读回的
+	// mode 恒为 0666（CI 实测 0x1b6）。私钥机密性在 Windows 上由用户
+	// 配置目录的 ACL 保证，该断言仅对 unix 平台成立。
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows 无 Unix 权限位，0600 断言不适用")
+	}
 	dir := t.TempDir()
 	_, err := LoadOrCreate(dir)
 	require.NoError(t, err)
