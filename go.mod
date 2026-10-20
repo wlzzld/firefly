@@ -1,13 +1,15 @@
 module github.com/lei/firefly
 
-go 1.27.1
+go 1.26.0
 
 require (
 	fyne.io/fyne/v2 v2.8.2
 	github.com/enbility/zeroconf/v2 v2.0.0-20240920094356-be1cae74fda6
 	github.com/flynn/noise v1.1.0
 	github.com/google/uuid v1.6.0
+	github.com/stretchr/testify v1.12.1
 	golang.org/x/sync v0.24.0
+	golang.org/x/sys v0.48.0
 	google.golang.org/protobuf v1.36.12
 	modernc.org/sqlite v1.60.1
 )
@@ -43,14 +45,12 @@ require (
 	github.com/rymdport/portal v0.4.2 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/image v0.24.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/tools v0.50.0 // indirect
 	modernc.org/libc v1.77.1 // indirect

@@ -12,6 +12,9 @@
 # 工具二进制（本地 go install 产物）
 /tools/
 
+# 打包脚本的临时备份（正常会自动清理，防止中断残留）
+FyneApp.toml.bak
+
 # 运行时数据
 *.db
 *.db-wal

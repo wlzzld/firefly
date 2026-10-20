@@ -20,8 +20,21 @@ if [ "$(uname)" != "Darwin" ]; then
 	exit 1
 fi
 
+# 与 fyne-cross 相同策略：先自行编译（注入版本号），再让 fyne package 只负责
+# 组装 .app。这样 srcDir 保持为仓库根目录，FyneApp.toml（图标/AppID 元数据）
+# 才能被正确读取——若用 --src cmd/firefly，工具会去该目录找 FyneApp.toml 而落空。
+# fyne package 结束时会按自己的模式回写 FyneApp.toml：丢掉 Summary、[Linux]
+# 等它不认识的键，并自增 Build 计数。打包前备份，脚本退出时恢复。
+cp FyneApp.toml FyneApp.toml.bak
+trap 'mv -f FyneApp.toml.bak FyneApp.toml' EXIT
+
+echo "==> 预编译二进制 version=${VERSION}"
+BIN_TMP="bin/firefly-darwin-$(uname -m)"
+mkdir -p bin
+go build -trimpath -ldflags "-X main.version=${VERSION}" -o "$BIN_TMP" ./cmd/firefly
+
 echo "==> fyne package -os darwin"
-"$FYNE" package -os darwin -name Firefly
+"$FYNE" package -os darwin -name Firefly -app-version "$VERSION" --executable "$BIN_TMP"
 
 PLIST="Firefly.app/Contents/Info.plist"
 if [ ! -f "$PLIST" ]; then
@@ -32,7 +45,7 @@ fi
 echo "==> 注入本地网络权限键"
 add_if_missing() {
 	if ! /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" >/dev/null 2>&1; then
-		/usr/libexec/PlistBuddy -c "Add :$1 $2" "$PLIST"
+		/usr/libexec/PlistBuddy -c "Add :$1 $2 ${3:-}" "$PLIST"
 	fi
 }
 add_if_missing NSLocalNetworkUsageDescription string \
@@ -45,6 +58,6 @@ fi
 echo "==> 重签名（ad-hoc；注入 plist 会使 fyne 的原签名失效）"
 codesign --force --deep --sign - Firefly.app
 
-echo "==> 完成：Firefly.app（版本 $VERSION）"
+echo "==> 完成：Firefly.app（版本 ${VERSION}）"
 echo "    提示：正式发布请使用开发者证书签名并公证（notarytool），"
 echo "    未签名/未公证的分发会让 macOS 对本地网络权限提示更严格。"
