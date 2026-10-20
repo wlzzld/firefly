@@ -134,7 +134,7 @@ func (cv *chatView) appendRow(m *store.Message) {
 	if cv.conv == hub.GroupLAN && m.Direction == store.DirectionInbound {
 		sender = cv.c.peerName(m.PeerID)
 	}
-	row := newMessageRow(m, sender, cv.c.onMessageTap)
+	row := newMessageRow(m, sender, cv.c.onMessageTap, cv.c.showMessageMenu)
 	cv.rowsBox.Add(row)
 	cv.rows = append(cv.rows, row)
 	cv.rowByID[m.ID] = row
@@ -176,7 +176,7 @@ func (cv *chatView) loadOlder() {
 		if cv.conv == hub.GroupLAN && m.Direction == store.DirectionInbound {
 			sender = cv.c.peerName(m.PeerID)
 		}
-		row := newMessageRow(m, sender, cv.c.onMessageTap)
+		row := newMessageRow(m, sender, cv.c.onMessageTap, cv.c.showMessageMenu)
 		pre = append(pre, row)
 		preRows = append(preRows, row)
 		cv.rowByID[m.ID] = row

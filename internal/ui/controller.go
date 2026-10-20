@@ -274,6 +274,36 @@ func (c *controller) onMessageTap(m *store.Message) {
 	})
 }
 
+// showMessageMenu 消息右键菜单：整条复制进剪贴板，或弹窗部分选中复制。
+func (c *controller) showMessageMenu(m *store.Message, pos fyne.Position) {
+	if m == nil {
+		return
+	}
+	menu := fyne.NewMenu("",
+		fyne.NewMenuItem("复制消息内容", func() {
+			fyne.CurrentApp().Clipboard().SetContent(m.Text)
+		}),
+		fyne.NewMenuItem("选中复制…", func() { c.showCopyDialog(m) }),
+	)
+	widget.NewPopUpMenu(menu, c.win.Canvas()).ShowAtPosition(pos)
+}
+
+// showCopyDialog 用多行 Entry 展示消息全文：可拖拽选中任意片段后 Cmd+C 复制
+// （聊天气泡内的 Label 不支持选中，这里补足该能力）。
+func (c *controller) showCopyDialog(m *store.Message) {
+	// Fyne 2.8 的 Entry 无只读态（Disable 会把文本置灰影响阅读）；
+	// 弹窗内是临时副本，误编辑不影响已存消息，故保持可交互的正常态
+	e := widget.NewMultiLineEntry()
+	e.Wrapping = fyne.TextWrapWord
+	e.SetText(m.Text)
+	body := container.NewVBox(
+		widget.NewLabel("拖拽选中文本，Cmd+C（Windows 为 Ctrl+C）复制："),
+		container.NewGridWrap(fyne.NewSize(460, 200), e),
+	)
+	dialog.NewCustom("选中复制", "关闭", body, c.win).Show()
+	c.win.Canvas().Focus(e)
+}
+
 // notify 弹系统通知（尽力而为）。
 func (c *controller) notify(title, body string) {
 	fyne.CurrentApp().SendNotification(fyne.NewNotification(title, body))

@@ -26,15 +26,17 @@ type messageRow struct {
 	// 群聊中入站消息显示的发送者名
 	senderName string
 
-	onTap func(*store.Message)
+	onTap       func(*store.Message)
+	onSecondary func(*store.Message, fyne.Position)
 }
 
-func newMessageRow(m *store.Message, senderName string, onTap func(*store.Message)) *messageRow {
+func newMessageRow(m *store.Message, senderName string, onTap func(*store.Message), onSecondary func(*store.Message, fyne.Position)) *messageRow {
 	r := &messageRow{
-		msg:        m,
-		outbound:   m.Direction == store.DirectionOutbound,
-		senderName: senderName,
-		onTap:      onTap,
+		msg:         m,
+		outbound:    m.Direction == store.DirectionOutbound,
+		senderName:  senderName,
+		onTap:       onTap,
+		onSecondary: onSecondary,
 	}
 	r.ExtendBaseWidget(r)
 	return r
@@ -46,6 +48,14 @@ func (r *messageRow) SetMessage(m *store.Message) { r.msg = m }
 func (r *messageRow) Tapped(*fyne.PointEvent) {
 	if r.onTap != nil {
 		r.onTap(r.msg)
+	}
+}
+
+// TappedSecondary 右键弹出复制菜单：Fyne 的 Label 不支持拖拽选中，
+// 整条复制走剪贴板，部分选中走只读 Entry 弹窗。
+func (r *messageRow) TappedSecondary(ev *fyne.PointEvent) {
+	if r.onSecondary != nil {
+		r.onSecondary(r.msg, ev.AbsolutePosition)
 	}
 }
 
@@ -108,10 +118,18 @@ const (
 	bubbleMinWidth = 60.0
 )
 
+// labelInnerPad 是 Fyne Label/RichText 的内部留白（每边）：
+// 文本实际可用宽度 = Label 宽度 - 2*innerPad，气泡高度也要给它留出上下空间，
+// 否则折行会比预期早、文本溢出气泡（表现为文本不居中/被裁剪）。
+func labelInnerPad() float32 {
+	return theme.Size(theme.SizeNameInnerPadding)
+}
+
 // bubbleSize 计算文本在 maxWidth 行宽内折行后的气泡尺寸。
 func (r *messageRow) bubbleSize(rowWidth float32) (w, h float32) {
 	pad := theme.Padding()
-	maxTextW := rowWidth*bubbleMaxRatio - 2*pad
+	ip := labelInnerPad()
+	maxTextW := rowWidth*bubbleMaxRatio - 2*pad - 2*ip
 	if maxTextW < bubbleMinWidth {
 		maxTextW = bubbleMinWidth
 	}
@@ -137,7 +155,8 @@ func (r *messageRow) bubbleSize(rowWidth float32) (w, h float32) {
 	if lines == 0 {
 		lines = 1
 	}
-	return maxW + 2*pad, float32(lines)*lineH + pad
+	// 气泡 = 文本 + Label 内部留白 + 气泡外边距，四边对称
+	return maxW + 2*pad + 2*ip, float32(lines)*lineH + 2*ip + 2*pad
 }
 
 // rowHeight 行总高度 = sender(可选) + 气泡 + meta + 间距。
@@ -184,8 +203,9 @@ func (rr *rowRenderer) Layout(size fyne.Size) {
 	rr.bg.Move(fyne.NewPos(x, top))
 	rr.bg.Resize(fyne.NewSize(bw, bh))
 
-	rr.label.Resize(fyne.NewSize(bw-2*pad, bh-pad))
-	rr.label.Move(fyne.NewPos(x+pad, top))
+	// Label 自带 innerPad 内边距，这里再留 pad 外边距：文本四边对称居中
+	rr.label.Resize(fyne.NewSize(bw-2*pad, bh-2*pad))
+	rr.label.Move(fyne.NewPos(x+pad, top+pad))
 
 	mh := metaTextSize() * 1.4
 	rr.meta.TextSize = metaTextSize()
