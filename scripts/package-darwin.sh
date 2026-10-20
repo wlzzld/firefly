@@ -11,6 +11,9 @@ set -euo pipefail
 VERSION="${1:-0.1.0}"
 FYNE="${FYNE:-fyne}"
 
+# go install 的产物在 GOPATH/bin，make 派生 shell 常常不在 PATH 里，主动补上
+export PATH="$(go env GOPATH)/bin:$PATH"
+
 if ! command -v "$FYNE" >/dev/null 2>&1; then
 	echo "未找到 fyne CLI。安装：go install fyne.io/tools/cmd/fyne@latest" >&2
 	exit 1

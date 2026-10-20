@@ -59,6 +59,62 @@ make cross-linux      # Linux（fyne-cross，需 Docker）
 Windows/Linux 走 fyne-cross，macOS 在 macos-14 runner 原生打包并注入
 Info.plist 权限键。
 
+### 产物安装与运行
+
+#### macOS — `Firefly.app`
+
+```bash
+make package-darwin                 # 仓库根产出 Firefly.app/
+cp -R Firefly.app /Applications/    # 或 Finder 拖入「应用程序」
+```
+
+- 产物为 **ad-hoc 签名、未公证**：本机构建的 .app 可直接打开；从 Release
+  下载经浏览器/网盘传入的被 Gatekeeper 拦截时，先
+  `xattr -dr com.apple.quarantine /Applications/Firefly.app` 再打开。
+- 首次启动系统弹 **「本地网络」** 权限提示，允许后才能发现设备；错过弹窗去
+  「系统设置 → 隐私与安全性 → 本地网络」勾选。
+- 也可命令行直接跑 bundle 内二进制：
+  `/Applications/Firefly.app/Contents/MacOS/firefly-darwin-arm64`。
+
+#### Windows — `firefly.exe`（绿色便携）
+
+产物 `fyne-cross/dist/windows-amd64/Firefly.zip` 解压后仅一个
+`firefly.exe`，**无安装过程**：
+
+1. 解压到固定目录，如 `C:\Program Files\Firefly\`；
+2. 双击 `firefly.exe` 运行；可右键「发送到 → 桌面快捷方式」；
+3. 首次启动防火墙弹窗勾选**专用网络**允许（误拒后的手动放行见排障）。
+
+#### Ubuntu — `Firefly.tar.xz`
+
+产物 `fyne-cross/dist/linux-amd64/Firefly.tar.xz` 内含二进制、`.desktop`
+菜单项、图标与安装用 Makefile：
+
+```bash
+tar -xf Firefly.tar.xz
+sudo make install      # 系统安装：/usr/local/bin + 桌面项 + 图标
+# 或免 sudo 的当前用户安装：make user-install（装到 ~/.local/bin，需在 PATH 中）
+```
+
+- 安装后应用网格搜索 **Firefly** 或终端运行 `firefly`；不安装也可直接跑
+  解压目录里的 `./usr/local/bin/firefly`。
+- 运行依赖 OpenGL 与 X11/Wayland 客户端库（Ubuntu 桌面版默认自带）；
+  精简系统补齐：`sudo apt install libgl1 libx11-6 libxcursor1 libxrandr2
+  libxinerama1 libxi1 libxxf86vm1 libxkbcommon0 libegl1 libgbm1`。
+- 卸载：`sudo make uninstall` / `make user-uninstall`。
+
+#### 数据目录（三平台通用）
+
+身份密钥、消息历史、接收文件都在数据目录，删除即完全重置：
+
+| 平台 | 数据目录 |
+|---|---|
+| macOS | `~/Library/Application Support/firefly/` |
+| Windows | `%AppData%\firefly\` |
+| Ubuntu | `~/.config/firefly/` |
+
+环境变量 `FIREFLY_DATA_DIR` 可整体改指向（双实例冒烟测试即用此隔离）。
+
 ## 排障
 
 ### macOS：设备列表始终为空
