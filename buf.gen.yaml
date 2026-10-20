@@ -1,0 +1,6 @@
+version: v2
+plugins:
+  - local: ./tools/protoc-gen-go
+    out: internal/protocol/pb
+    opt:
+      - paths=source_relative

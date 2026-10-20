@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: 三平台冒烟（build + vet + test -race）
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: Linux 构建依赖（Fyne 需要 X11/Wayland 头文件）
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev \
+            libxkbcommon-dev libwayland-dev wayland-protocols
+
+      # windows-latest 自带 MinGW64（Fyne 的 cgo 依赖）
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test（含双节点集成测试；Windows 跳过）
+        run: go test ./... -count=1 -race

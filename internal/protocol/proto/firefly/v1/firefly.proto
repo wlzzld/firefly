@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package firefly.v1;
+
+option go_package = "github.com/lei/firefly/internal/protocol/pb/firefly/v1;fireflyv1";
+
+// ============================================================================
+// Noise 握手 payload（XX 模式 msg2/msg3 携带，Ed25519 签名绑定静态密钥）
+// sig = Ed25519.Sign(priv, "firefly/1" || handshake_hash || own_x25519_static_pub)
+// ============================================================================
+
+message HandshakePayload {
+  bytes ed25519_pub = 1; // 长期身份公钥（= PeerID）
+  bytes sig = 2;         // 对握手转录的签名
+  string name = 3;       // 设备显示名（便利性字段，不用于安全判定）
+}
+
+// ============================================================================
+// 所有 TCP 连接（消息连接与文件连接）统一使用 Envelope 分帧：
+// 帧格式 [u32be len][Noise 密文(Envelope protobuf)]
+// 文件连接的第一个 Envelope 携带 stream_header，据此路由到 filetransfer。
+// ============================================================================
+
+message Envelope {
+  uint32 proto_version = 1; // 当前为 1
+  string message_id = 2;    // UUIDv7（消息去重键；流帧可复用 transfer 内序号语义，由应用层填充）
+  int64 sent_at_unix_ms = 3;
+  oneof payload {
+    Chat chat = 10;
+    Receipt receipt = 11;
+    FileOffer file_offer = 12;
+    FileResponse file_response = 13;
+    FileCancel file_cancel = 14;
+    Presence presence = 15;
+    Typing typing = 16;
+    StreamHeader stream_header = 17; // 文件连接首帧
+    StreamPacket stream_packet = 18; // 文件数据帧
+  }
+  // 演进预留：未来"消息密钥 + pairwise 包装 + 组播"方案使用，v1 不填充。
+  repeated KeyWrap key_wrap = 20;
+}
+
+// Chat 文本聊天消息。conversation_id: "dm:<peerID hex>" 或 "group:lan"。
+message Chat {
+  string conversation_id = 1;
+  string text = 2; // 上限 8KiB，由应用层强制
+  string reply_to = 3;
+}
+
+enum ReceiptKind {
+  RECEIPT_KIND_UNSPECIFIED = 0;
+  RECEIPT_KIND_DELIVERED = 1;
+  RECEIPT_KIND_READ = 2;
+}
+
+message Receipt {
+  string message_id = 1;
+  ReceiptKind kind = 2;
+}
+
+// ============================================================================
+// 文件传输
+// ============================================================================
+
+message FileOffer {
+  string transfer_id = 1;
+  string file_id = 2; // 文件内容 SHA-256 hex（内容寻址）
+  string name = 3;
+  int64 size = 4;
+  bytes sha256 = 5; // 原始 32 字节
+  string conversation_id = 6;
+}
+
+message FileResponse {
+  string transfer_id = 1;
+  oneof decision {
+    int64 accept_resume_offset = 2; // 接收端已有 .part 的偏移，0 表示从头传
+    string decline_reason = 3;
+  }
+}
+
+message FileCancel {
+  string transfer_id = 1;
+  string reason = 2;
+}
+
+// StreamHeader 是文件专用连接握手后的首帧，绑定 transfer 与起始偏移。
+message StreamHeader {
+  string transfer_id = 1;
+  int64 start_offset = 2;
+}
+
+message StreamPacket {
+  oneof p {
+    bytes chunk = 1;       // ≤ 32KiB
+    uint64 eof_offset = 2; // 传输结束，携带最终文件长度
+    ProgressAck ack = 3;   // 接收端进度确认（每 1MiB 一次）
+  }
+}
+
+message ProgressAck {
+  uint64 offset = 1;
+}
+
+// ============================================================================
+// 在线状态
+// ============================================================================
+
+message Presence {
+  string name = 1;     // 设备显示名（可变更）
+  string platform = 2; // darwin / windows / linux
+}
+
+message Typing {
+  string conversation_id = 1;
+  bool typing = 2;
+}
+
+// 预留的密钥包装结构（v1 不使用）
+message KeyWrap {
+  bytes peer_id = 1;
+  bytes wrapped_key = 2;
+}
+
+// ============================================================================
+// UDP 广播发现（明文，仅作线索，真实性由 Noise 握手签名证明）
+// ============================================================================
+
+message Announce {
+  bytes peer_id = 1; // Ed25519 公钥 32 字节
+  string name = 2;
+  string platform = 3;
+  uint32 tcp_port = 4;
+  string fingerprint = 5;
+  uint32 proto_version = 6;
+  int64 ts_unix_ms = 7;
+  Kind kind = 8;
+
+  enum Kind {
+    KIND_ANNOUNCE = 0; // 常规心跳
+    KIND_PROBE = 1;    // 启动时请求所有节点立即 announce
+    KIND_GOODBYE = 2;  // 主动下线
+  }
+}

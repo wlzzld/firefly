@@ -1,0 +1,24 @@
+# 构建产物
+/bin/
+/dist/
+/fyne-cross/
+/Firefly.app/
+*.exe
+*.app
+*.dmg
+*.AppImage
+*.deb
+
+# 工具二进制（本地 go install 产物）
+/tools/
+
+# 运行时数据
+*.db
+*.db-wal
+*.db-shm
+identity.key
+
+# IDE / 系统
+.idea/
+.vscode/
+.DS_Store

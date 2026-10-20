@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows-linux:
+    name: Windows + Linux（fyne-cross）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: 安装 fyne-cross
+        run: go install github.com/fyne-io/fyne-cross@latest
+
+      - name: 打包 Windows amd64
+        run: fyne-cross windows -arch amd64 -name Firefly
+
+      - name: 打包 Linux amd64
+        run: fyne-cross linux -arch amd64 -name Firefly
+
+      - name: 附加到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            fyne-cross/dist/windows_amd64/*.zip
+            fyne-cross/dist/linux_amd64/*.tar.gz
+
+  darwin:
+    name: macOS（原生打包 + 权限键注入）
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: 安装 fyne CLI
+        run: go install fyne.io/tools/cmd/fyne@latest
+
+      - name: 打包 .app（注入 NSLocalNetworkUsageDescription / NSBonjourServices）
+        run: make package-darwin VERSION=${GITHUB_REF_NAME#v}
+
+      - name: 压缩
+        run: ditto -c -k --sequesterRsrc --keepParent Firefly.app Firefly-macos-arm64.zip
+
+      - name: 附加到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Firefly-macos-arm64.zip

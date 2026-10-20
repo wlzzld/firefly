@@ -1,0 +1,12 @@
+[Details]
+Name = "Firefly"
+ID = "com.lei.firefly"
+Version = "0.1.0"
+Summary = "去中心化的局域网聊天与文件传输客户端（端到端加密）"
+Icon = "build/icon.png"
+
+[Linux]
+Type = "Application"
+Categories = ["Network", "InstantMessaging", "FileTransfer"]
+Keywords = ["chat", "lan", "p2p", "file-transfer", "e2ee"]
+GenericName = "LAN Chat and File Transfer"
