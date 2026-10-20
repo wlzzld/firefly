@@ -35,7 +35,7 @@ fi
 
 if [ "$TARGET" = "linux" ] || [ "$TARGET" = "all" ]; then
 	echo "==> fyne-cross linux (amd64)"
-	# Linux 产物为 .tar.gz；AppImage/deb 需要额外工具链，CI release 阶段处理
+	# Linux 产物为 .tar.xz（含安装 Makefile）；AppImage/deb 需要额外工具链，从略
 	fyne-cross linux -arch amd64 -cache "$CACHE_DIR" -name Firefly ./cmd/firefly
 fi
 

@@ -31,8 +31,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            fyne-cross/dist/windows_amd64/*.zip
-            fyne-cross/dist/linux_amd64/*.tar.gz
+            fyne-cross/dist/windows-amd64/*.zip
+            fyne-cross/dist/linux-amd64/*.tar.xz
 
   darwin:
     name: macOS（原生打包 + 权限键注入）
