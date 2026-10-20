@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/netip"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -152,6 +153,36 @@ func parseTxt(text []string) map[string]string {
 	return kv
 }
 
+// unescapeInstance 还原 dns-sd 域名转义：miekg/dns 解包时把非打印/非 ASCII
+// 字节写成 \DDD（十进制字节值），反斜杠自身等特写字写成 \c 字面量。
+// 设备显示名含中文时，实例名读回即为转义文本，不还原会原样入库。
+func unescapeInstance(s string) string {
+	if !strings.Contains(s, "\\") {
+		return s
+	}
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 >= len(s) {
+			b = append(b, s[i])
+			continue
+		}
+		if i+3 < len(s) && isDigit(s[i+1]) && isDigit(s[i+2]) && isDigit(s[i+3]) {
+			if v, err := strconv.Atoi(s[i+1 : i+4]); err == nil && v <= 255 {
+				b = append(b, byte(v))
+				i += 3
+				continue
+			}
+			b = append(b, s[i]) // 非法字节值（>255）：反斜杠原样保留
+			continue
+		}
+		i++
+		b = append(b, s[i])
+	}
+	return string(b)
+}
+
+func isDigit(c byte) bool { return c >= '0' && c <= '9' }
+
 func (m *mdnsChannel) handleEntry(e *zeroconf.ServiceEntry) {
 	if e == nil {
 		return
@@ -200,7 +231,9 @@ func (m *mdnsChannel) handleEntry(e *zeroconf.ServiceEntry) {
 		source:      SourceMDNS,
 	}
 	if sighting.name == "" {
-		sighting.name = e.Instance // 兜底：mDNS 实例名
+		// 兜底：mDNS 实例名。miekg/dns 解包域名时把非 ASCII 字节转义为
+		// \DDD（十进制），这里反向还原，否则设备名会变成转义文本入库
+		sighting.name = unescapeInstance(e.Instance)
 	}
 	m.log.Debug("mDNS 发现服务", "instance", e.Instance, "addr", sighting.addr, "name", sighting.name)
 	select {
